@@ -1,0 +1,136 @@
+name: SaaS CI/CD Pipeline
+
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+
+jobs:
+    # ------------------------------------------------------------------
+    # STAGE 1: VALIDATION (Fast Fail)
+    # ------------------------------------------------------------------
+    validate:
+        name: 🔍 Validate (Lint)
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+                  cache-dependency-path: "./client/package-lock.json"
+
+            - name: Lint Client
+              working-directory: ./client
+              run: |
+                  npm ci
+                  npm run lint
+
+            - name: Lint Server
+              working-directory: ./server
+              run: |
+                  npm ci
+                  npm run test -- --passWithNoTests # Placeholder for server lint if not configured
+
+    # ------------------------------------------------------------------
+    # STAGE 2: UNIT & COMPONENT TESTS (Parallel)
+    # ------------------------------------------------------------------
+    test-backend-unit:
+        name: 🧪 Backend Unit
+        needs: validate
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+
+            - name: Run Server Unit Tests
+              working-directory: ./server
+              run: |
+                  npm ci
+                  npm run test:unit
+
+    test-frontend-component:
+        name: 🧩 Frontend Unit
+        needs: validate
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+
+            - name: Run Client Component Tests
+              working-directory: ./client
+              run: |
+                  npm ci
+                  npm test
+
+    # ------------------------------------------------------------------
+    # STAGE 3: INTEGRATION & SECURITY (Service Dependent)
+    # ------------------------------------------------------------------
+    test-integration:
+        name: 🔗 Integration & Security
+        needs: [test-backend-unit, test-frontend-component]
+        runs-on: ubuntu-latest
+        services:
+            mongodb:
+                image: mongo:6.0
+                ports:
+                    - 27017:27017
+                options: >-
+                    --health-cmd mongo
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        env:
+            DB_URI: mongodb://localhost:27017/hostel_test_db
+            JWT_SECRET: test_secret_key_123
+            NODE_ENV: test
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+
+            - name: Run Backend Integration Tests
+              working-directory: ./server
+              run: |
+                  npm ci
+                  npm run test # Runs jest matching .test.js (excludes e2e usually)
+
+    # ------------------------------------------------------------------
+    # STAGE 4: E2E SIMULATION (Blocking)
+    # ------------------------------------------------------------------
+    test-e2e:
+        name: 🚦 System E2E Simulation
+        needs: test-integration
+        runs-on: ubuntu-latest
+        services:
+            mongodb:
+                image: mongo:6.0
+                ports:
+                    - 27017:27017
+
+        env:
+            DB_URI: mongodb://localhost:27017/hostel_e2e_db
+            JWT_SECRET: e2e_secret_key
+            NODE_ENV: test
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+
+            - name: Install & Run E2E Simulation
+              working-directory: ./server
+              run: |
+                  npm ci
+                  npm run test:e2e

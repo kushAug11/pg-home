@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="200" height="50">
+  <rect width="200" height="50" fill="transparent"/>
+  <path d="M10 25 L25 10 L40 25 V45 H10 V25 Z" fill="#4f46e5" stroke="#4f46e5" stroke-width="2"/>
+  <rect x="20" y="30" width="10" height="15" fill="#ffffff"/>
+  <text x="50" y="35" font-family="Arial, sans-serif" font-weight="bold" font-size="24" fill="#1e293b">StayManager</text>
+</svg>
