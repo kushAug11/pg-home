@@ -1,6 +1,10 @@
 
 node_modules
 npm-debug.log
+
+
+
+av
 .git
 .gitignore
 .env
