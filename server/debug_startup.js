@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const { MONGODB_URI, NODE_ENV } = require('./src/config/env');
 
 console.log('NODE_ENV:', NODE_ENV);
+
+
 console.log('MONGODB_URI:', MONGODB_URI);
 
 const connectDB = async () => {
