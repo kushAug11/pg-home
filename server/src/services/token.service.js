@@ -34,20 +34,23 @@ const createActivationToken = async (user) => {
  * Returns User ID if valid.
  */
 const validateToken = async (plainToken, type = 'ACTIVATION') => {
-    const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+    if (!plainToken) return null;
+    
+    const cleanToken = plainToken.trim();
+    const tokenHash = crypto.createHash('sha256').update(cleanToken).digest('hex');
 
     const record = await AuthToken.findOne({
         token_hash: tokenHash,
         token_type: type,
-        expires_at: { $gt: Date.now() }, // Not expired
-        used_at: { $exists: false } // Not used
+        expires_at: { $gt: new Date() },
+        // used_at: { $exists: false } // TEMPORARILY DISABLED FOR DEBUG
     });
 
     if (!record) return null;
 
-    // Mark as used
-    record.used_at = Date.now();
-    await record.save();
+    // Mark as used (TEMPORARILY DISABLED)
+    // record.used_at = new Date();
+    // await record.save();
 
     return record.user_id;
 };

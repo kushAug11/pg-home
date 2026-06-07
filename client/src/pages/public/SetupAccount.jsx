@@ -35,13 +35,25 @@ const SetupAccount = () => {
         }
 
         setLoading(true);
+        console.log('Attempting setup with token:', token?.substring(0, 10) + '...');
 
         try {
-            await authService.setupAccount(token, password);
-            navigate('/tenant'); // Redirect to Tenant Dashboard
+            const res = await authService.setupAccount(token, password);
+            console.log('Setup successful:', res);
+            
+            // Determine redirect based on role
+            const role = res.data?.role;
+            if (role === 'owner') {
+                navigate('/owner');
+            } else if (role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/tenant');
+            }
         } catch (err) {
-            console.error(err);
-            setError(err.response?.data?.message || 'Failed to setup account. Link may be expired.');
+            console.error('Setup error details:', err);
+            const serverMessage = err.response?.data?.message;
+            setError(serverMessage || 'Failed to setup account. The server might be unreachable or the link has expired.');
         } finally {
             setLoading(false);
         }

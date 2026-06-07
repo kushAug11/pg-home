@@ -12,7 +12,7 @@ const seedData = async () => {
         // 1. Create Admin
         try {
             const adminEmail = `admin_${suffixes.admin}@hostel.com`;
-            await axios.post('http://localhost:5000/api/auth/register', {
+            await axios.post('http://localhost:5001/api/auth/register', {
                 name: 'Super Admin ' + suffixes.admin,
                 email: adminEmail,
                 password: 'password123',
@@ -27,7 +27,7 @@ const seedData = async () => {
         let ownerToken = null;
         try {
             const ownerEmail = `owner_${suffixes.owner}@hostel.com`;
-            const ownerRes = await axios.post('http://localhost:5000/api/auth/register', {
+            const ownerRes = await axios.post('http://localhost:5001/api/auth/register', {
                 name: 'Mahi Owner ' + suffixes.owner,
                 email: ownerEmail,
                 password: 'password123',
@@ -43,7 +43,7 @@ const seedData = async () => {
         // 3. Create Tenant (Direct Register)
         try {
             const tenantEmail = `tenant_${suffixes.tenant}@hostel.com`;
-            await axios.post('http://localhost:5000/api/auth/register', {
+            await axios.post('http://localhost:5001/api/auth/register', {
                 name: 'Simple Tenant ' + suffixes.tenant,
                 email: tenantEmail,
                 password: 'password123',

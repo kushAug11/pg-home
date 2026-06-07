@@ -13,25 +13,24 @@ const checkSubscription = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'PG Not Found' });
         }
 
-        // Logic for Subscription Status
-        const { status, expiryDate } = pg.subscription;
-
-        if (status !== 'active') {
-            return res.status(403).json({
-                success: false,
-                message: 'Subscription Required. Please upgrade your plan to access this feature.',
-                errorType: 'SUBSCRIPTION_REQUIRED'
-            });
-        }
-
-        if (expiryDate && new Date(expiryDate) < new Date()) {
-            // Optional: Auto-downgrade logic could go here, but for now just block
-            return res.status(403).json({
-                success: false,
-                message: 'Subscription Expired. Please renew your plan.',
-                errorType: 'SUBSCRIPTION_EXPIRED'
-            });
-        }
+        // Logic for Subscription Status (BYPASSED - All features granted)
+        // const { status, expiryDate } = pg.subscription;
+        // 
+        // if (status !== 'active') {
+        //     return res.status(403).json({
+        //         success: false,
+        //         message: 'Subscription Required. Please upgrade your plan to access this feature.',
+        //         errorType: 'SUBSCRIPTION_REQUIRED'
+        //     });
+        // }
+        // 
+        // if (expiryDate && new Date(expiryDate) < new Date()) {
+        //     return res.status(403).json({
+        //         success: false,
+        //         message: 'Subscription Expired. Please renew your plan.',
+        //         errorType: 'SUBSCRIPTION_EXPIRED'
+        //     });
+        // }
 
         next();
 

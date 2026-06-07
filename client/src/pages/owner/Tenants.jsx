@@ -4,12 +4,37 @@ import { UserPlus, Trash2, Phone, Mail, Edit2, Upload, Eye, EyeOff, CheckCircle,
 import Skeleton from '../../components/common/Skeleton';
 import SearchInput from '../../components/common/SearchInput';
 
+const defaultFormData = {
+    name: '',
+    email: '',
+    password: '',
+    mobile: '',
+    room_id: '',
+    rentAmount: '',
+    advanceAmount: '',
+    guardian_name: '',
+    guardian_phone: '',
+    permanent_address: '',
+    id_proof_type: 'Aadhaar',
+    id_proof_number: '',
+    blood_group: '',
+    moveInDate: new Date().toISOString().split('T')[0],
+    idProofFront: null,
+    idProofBack: null,
+    sleepSchedule: 'FLEXIBLE',
+    diet: 'ANY',
+    profession: 'OTHER',
+    cleanliness: 3,
+    noiseTolerance: 'MEDIUM'
+};
+
 const OwnerTenants = () => {
     const [tenants, setTenants] = useState([]);
     const [loading, setLoading] = useState(true);
     const [rooms, setRooms] = useState([]);
     const [hasAccess, setHasAccess] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
+    const [selectedTenantForDrawer, setSelectedTenantForDrawer] = useState(null);
 
     // Validation states
     const [validationErrors, setValidationErrors] = useState({
@@ -25,15 +50,15 @@ const OwnerTenants = () => {
 
     // Add Tenant Form State
     const [showForm, setShowForm] = useState(() => {
-        return localStorage.getItem('showTenantForm') === 'true';
+        try {
+            return localStorage.getItem('showTenantForm') === 'true';
+        } catch (e) {
+            return false;
+        }
     });
 
     const [formData, setFormData] = useState(() => {
-        const saved = localStorage.getItem('tenantFormData');
-        if (saved) {
-            return JSON.parse(saved);
-        }
-        return {
+        const defaultState = {
             name: '',
             email: '',
             password: '',
@@ -41,33 +66,45 @@ const OwnerTenants = () => {
             room_id: '',
             rentAmount: '',
             advanceAmount: '',
-            // Compliance Fields
             guardian_name: '',
             guardian_phone: '',
             permanent_address: '',
             id_proof_type: 'Aadhaar',
             id_proof_number: '',
             blood_group: '',
-            moveInDate: new Date().toISOString().split('T')[0], // Default to today
-            idProofFront: null, // Files cannot be persisted in localStorage easily
+            moveInDate: new Date().toISOString().split('T')[0],
+            idProofFront: null,
             idProofBack: null,
-            // Preferences
             sleepSchedule: 'FLEXIBLE',
             diet: 'ANY',
             profession: 'OTHER',
             cleanliness: 3,
             noiseTolerance: 'MEDIUM'
         };
+        try {
+            const saved = localStorage.getItem('tenantFormData');
+            if (saved) {
+                const parsedSaved = JSON.parse(saved);
+                return { ...defaultState, ...parsedSaved };
+            }
+        } catch (e) {
+            console.warn("Could not parse tenantFormData from localStorage");
+        }
+        return defaultState;
     });
 
     useEffect(() => {
-        localStorage.setItem('showTenantForm', showForm);
+        try {
+            localStorage.setItem('showTenantForm', showForm);
+        } catch (e) {}
     }, [showForm]);
 
     useEffect(() => {
         // Exclude file objects from localStorage as they can't be serialized
         const { idProofFront, idProofBack, ...dataToSave } = formData;
-        localStorage.setItem('tenantFormData', JSON.stringify(dataToSave));
+        try {
+            localStorage.setItem('tenantFormData', JSON.stringify(dataToSave));
+        } catch (e) {}
     }, [formData]);
 
     useEffect(() => {
@@ -325,28 +362,6 @@ const OwnerTenants = () => {
         }
     };
 
-    if (!hasAccess) {
-        return (
-            <div className="p-6 flex flex-col items-center justify-center h-full min-h-[400px]">
-                <div className="bg-yellow-50 border border-yellow-200 p-8 rounded-2xl text-center max-w-md">
-                    <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-3xl">🔒</span>
-                    </div>
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Premium Feature</h2>
-                    <p className="text-slate-600 mb-6">
-                        Managing tenants is available only for active subscribers. Please upgrade your plan to continue.
-                    </p>
-                    <button
-                        onClick={() => window.location.href = '/pricing'}
-                        className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
-                    >
-                        View Plans
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     const handleBulkUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -443,6 +458,28 @@ const OwnerTenants = () => {
         );
     });
 
+    if (!hasAccess) {
+        return (
+            <div className="p-6 flex flex-col items-center justify-center h-full min-h-[400px]">
+                <div className="bg-yellow-50 border border-yellow-200 p-8 rounded-2xl text-center max-w-md">
+                    <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-3xl">🔒</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Premium Feature</h2>
+                    <p className="text-slate-600 mb-6">
+                        Managing tenants is available only for active subscribers. Please upgrade your plan to continue.
+                    </p>
+                    <button
+                        onClick={() => window.location.href = '/pricing'}
+                        className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                    >
+                        View Plans
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="p-6">
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -483,7 +520,8 @@ const OwnerTenants = () => {
                                     setFormData({
                                         name: '', email: '', password: '', mobile: '', room_id: '', rentAmount: '', advanceAmount: '',
                                         idProofFront: null, idProofBack: null, guardian_name: '', guardian_phone: '', permanent_address: '', id_proof_type: 'Aadhaar', id_proof_number: '', blood_group: '',
-                                        moveInDate: new Date().toISOString().split('T')[0]
+                                        moveInDate: new Date().toISOString().split('T')[0],
+                                        sleepSchedule: 'FLEXIBLE', diet: 'ANY', profession: 'OTHER', cleanliness: 3, noiseTolerance: 'MEDIUM'
                                     });
                                     // Reset validation states
                                     setValidationErrors({ mobile: '', guardian_phone: '', id_proof_number: '' });
@@ -491,10 +529,7 @@ const OwnerTenants = () => {
                                 } else {
                                     setShowForm(true);
                                     setEditingId(null);
-                                    setFormData({
-                                        name: '', email: '', password: '', mobile: '', room_id: '', rentAmount: '', advanceAmount: '',
-                                        idProof: null, guardian_name: '', guardian_phone: '', permanent_address: '', id_proof_type: 'Aadhaar', id_proof_number: '', blood_group: ''
-                                    });
+                                    setFormData(defaultFormData);
                                     // Reset validation states
                                     setValidationErrors({ mobile: '', guardian_phone: '', id_proof_number: '' });
                                     setValidationSuccess({ mobile: false, guardian_phone: false, id_proof_number: false });
@@ -870,6 +905,13 @@ const OwnerTenants = () => {
                                     <p className="text-xs text-slate-500">Rent/mo</p>
                                 </div>
                                 <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setSelectedTenantForDrawer(tenant)}
+                                        className="text-slate-500 hover:bg-slate-100 p-2 rounded-lg transition-colors"
+                                        title="View Full Details"
+                                    >
+                                        <Eye size={18} />
+                                    </button>
                                     <button onClick={() => handleEdit(tenant)} className="text-indigo-500 hover:bg-indigo-50 p-2 rounded-lg transition-colors">
                                         <Edit2 size={18} />
                                     </button>
@@ -880,6 +922,180 @@ const OwnerTenants = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Tenant Details Drawer */}
+            {selectedTenantForDrawer && (
+                <div className="fixed inset-0 z-50 overflow-hidden">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedTenantForDrawer(null)}></div>
+                    
+                    <div className="absolute inset-y-0 right-0 max-w-xl w-full bg-white shadow-2xl flex flex-col animate-slide-in-right">
+                        {/* Header */}
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+                                    {selectedTenantForDrawer.user_id?.name?.charAt(0)}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">{selectedTenantForDrawer.user_id?.name}</h2>
+                                    <p className="text-sm text-slate-500">{selectedTenantForDrawer.user_id?.email}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedTenantForDrawer(null)} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 transition-colors">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                            {/* Vital Stats */}
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                    <p className="text-[10px] font-bold text-indigo-400 uppercase mb-1">Room</p>
+                                    <p className="text-lg font-bold text-indigo-700">{selectedTenantForDrawer.room_id?.number || 'N/A'}</p>
+                                </div>
+                                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                                    <p className="text-[10px] font-bold text-emerald-400 uppercase mb-1">Rent</p>
+                                    <p className="text-lg font-bold text-emerald-700">₹{selectedTenantForDrawer.rentAmount}</p>
+                                </div>
+                                <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                                    <p className="text-[10px] font-bold text-amber-400 uppercase mb-1">Advance</p>
+                                    <p className="text-lg font-bold text-amber-700">₹{selectedTenantForDrawer.advanceAmount || 0}</p>
+                                </div>
+                            </div>
+
+                            {/* Contact & Personal */}
+                            <section>
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <Phone size={14} /> Contact Information
+                                </h3>
+                                <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">Mobile Number</span>
+                                        <span className="font-semibold text-slate-800">{selectedTenantForDrawer.contact_number || 'Not Provided'}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm border-t border-slate-200/50 pt-3">
+                                        <span className="text-slate-500">Guardian Name</span>
+                                        <span className="font-semibold text-slate-800">{selectedTenantForDrawer.guardian_name || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm border-t border-slate-200/50 pt-3">
+                                        <span className="text-slate-500">Guardian Phone</span>
+                                        <span className="font-semibold text-slate-800">{selectedTenantForDrawer.guardian_phone || 'N/A'}</span>
+                                    </div>
+                                    <div className="pt-3 border-t border-slate-200/50">
+                                        <span className="text-slate-500 text-sm block mb-1">Permanent Address</span>
+                                        <p className="text-sm text-slate-700 leading-relaxed">{selectedTenantForDrawer.permanent_address || 'No address on file.'}</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Verification Documents */}
+                            <section>
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <CheckCircle size={14} /> Identification & Verification
+                                </h3>
+                                <div className="bg-slate-50 rounded-xl p-4 space-y-4">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <div>
+                                            <span className="text-slate-500 block text-xs">ID Type ({selectedTenantForDrawer.id_proof_type})</span>
+                                            <span className="font-mono font-bold text-slate-800">{selectedTenantForDrawer.id_proof_number}</span>
+                                        </div>
+                                        <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                                            <span className="text-[10px] font-bold">VERIFIED</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3 pt-2">
+                                        {selectedTenantForDrawer.idProofFrontPath ? (
+                                            <a 
+                                                href={`${import.meta.env.VITE_API_URL.replace('/api', '')}/uploads/id_proofs/${selectedTenantForDrawer.idProofFrontPath.split('/').pop()}`}
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-indigo-100 rounded-lg hover:bg-indigo-50 transition-colors group"
+                                            >
+                                                <Upload size={20} className="text-indigo-400 mb-1 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[10px] font-bold text-indigo-600">VIEW FRONT</span>
+                                            </a>
+                                        ) : (
+                                            <div className="p-3 border border-slate-200 rounded-lg text-center opacity-50 bg-slate-100">
+                                                <span className="text-[10px] text-slate-400">FRONT MISSING</span>
+                                            </div>
+                                        )}
+                                        
+                                        {selectedTenantForDrawer.idProofBackPath ? (
+                                            <a 
+                                                href={`${import.meta.env.VITE_API_URL.replace('/api', '')}/uploads/id_proofs/${selectedTenantForDrawer.idProofBackPath.split('/').pop()}`}
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-indigo-100 rounded-lg hover:bg-indigo-50 transition-colors group"
+                                            >
+                                                <Upload size={20} className="text-indigo-400 mb-1 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[10px] font-bold text-indigo-600">VIEW BACK</span>
+                                            </a>
+                                        ) : (
+                                            <div className="p-3 border border-slate-200 rounded-lg text-center opacity-50 bg-slate-100">
+                                                <span className="text-[10px] text-slate-400">BACK MISSING</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Lifestyle Preferences */}
+                            <section>
+                                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <Mail size={14} /> Roommate Profiling
+                                </h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Sleep</p>
+                                        <p className="text-xs font-semibold text-slate-700">{selectedTenantForDrawer.preferences?.sleepSchedule}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Diet</p>
+                                        <p className="text-xs font-semibold text-slate-700">{selectedTenantForDrawer.preferences?.diet}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Profession</p>
+                                        <p className="text-xs font-semibold text-slate-700">{selectedTenantForDrawer.preferences?.profession}</p>
+                                    </div>
+                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Noise Tolerance</p>
+                                        <p className="text-xs font-semibold text-slate-700">{selectedTenantForDrawer.preferences?.noiseTolerance}</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-xs font-bold text-indigo-400">CLEANLINESS INDEX</span>
+                                        <span className="text-sm font-black text-indigo-600">{selectedTenantForDrawer.preferences?.cleanliness}/5</span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                        <div 
+                                            className="bg-indigo-600 h-full transition-all duration-1000" 
+                                            style={{ width: `${(selectedTenantForDrawer.preferences?.cleanliness / 5) * 100}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                        
+                        {/* Footer Actions */}
+                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3">
+                            <button 
+                                onClick={() => { handleEdit(selectedTenantForDrawer); setSelectedTenantForDrawer(null); }}
+                                className="flex-1 bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-100 transition-colors shadow-sm"
+                            >
+                                Edit Profile
+                            </button>
+                            <button 
+                                onClick={() => { handleDelete(selectedTenantForDrawer._id); setSelectedTenantForDrawer(null); }}
+                                className="px-6 bg-rose-50 border border-rose-100 text-rose-600 py-3 rounded-xl font-bold hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

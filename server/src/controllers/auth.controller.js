@@ -273,16 +273,23 @@ exports.resetPassword = async (req, res) => {
 exports.setupAccount = async (req, res) => {
     try {
         const { token, password } = req.body;
+        console.log(`[AUTH] Setup Account attempt with token: ${token?.substring(0, 10)}...`);
 
         // 1. Validate Token (AuthToken Table)
         const userId = await tokenService.validateToken(token, 'ACTIVATION');
 
         if (!userId) {
+            console.warn(`[AUTH] Setup Account FAILED: Invalid or expired token`);
             return res.status(400).json({ success: false, message: 'Invalid or expired setup link' });
         }
 
+        console.log(`[AUTH] Token validated for userId: ${userId}`);
+
         const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        if (!user) {
+            console.error(`[AUTH] User not found for valid token! UserId: ${userId}`);
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
 
         if (password.length < 6) {
             return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
@@ -295,19 +302,21 @@ exports.setupAccount = async (req, res) => {
         // Activate
         user.accountStatus = 'ACTIVE';
         user.mustChangePassword = false;
-        // Old fields cleanup (optional)
-        user.setupToken = undefined;
-        user.setupTokenExpires = undefined;
-
+        
         await user.save();
+        console.log(`[AUTH] User ${user.email} successfully activated.`);
 
         // Log Analytics: Activated
-        await OnboardingAnalytics.create({
-            pg_id: user.pg_id,
-            tenant_id: user._id,
-            step: 'ACTIVATED',
-            meta: { email: user.email }
-        });
+        try {
+            await OnboardingAnalytics.create({
+                pg_id: user.pg_id,
+                tenant_id: user._id,
+                step: 'ACTIVATED',
+                meta: { email: user.email }
+            });
+        } catch (analyticsError) {
+            console.error("[AUTH] Analytics logging failed:", analyticsError.message);
+        }
 
         res.json({
             success: true,
@@ -322,7 +331,7 @@ exports.setupAccount = async (req, res) => {
             message: 'Account setup successful'
         });
     } catch (error) {
-        console.error("Setup Account Error:", error);
+        console.error("[AUTH] Setup Account Error:", error);
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 };

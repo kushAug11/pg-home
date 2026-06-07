@@ -303,7 +303,7 @@ exports.recordManualPayment = async (req, res) => {
             pg_id: tenant.pg_id,
             user_id: getRequestUserId(req),
             tenant_id: tenantId,
-            amount: amount,
+            amount: Number(amount),
             currency: 'INR',
             type: 'RENT',
             status: 'SUCCESS',

@@ -55,7 +55,8 @@ const paymentSchema = new mongoose.Schema({
   // Razorpay Specific Fields
   gateway_order_id: {
     type: String,
-    unique: true // Ensures 1:1 mapping with Gateway Orders
+    unique: true,
+    sparse: true // Allows multiple nulls for manual payments
   },
   gateway_payment_id: String,
   gateway_signature: String,

@@ -88,8 +88,15 @@ const Rooms = () => {
         e.preventDefault();
         setSubmitting(true);
         try {
+            // Force type cast to Number to prevent Mongoose validation errors
+            const payload = {
+                ...formData,
+                rent: Number(formData.rent),
+                capacity: Number(formData.capacity)
+            };
+
             if (editingId) {
-                const res = await ownerService.updateRoom(editingId, formData);
+                const res = await ownerService.updateRoom(editingId, payload);
                 if (res.success) {
                     setRooms(rooms.map(r => r._id === editingId ? res.data : r));
                     setIsModalOpen(false);
@@ -103,7 +110,7 @@ const Rooms = () => {
                     }
                 }
             } else {
-                const res = await ownerService.createRoom(formData);
+                const res = await ownerService.createRoom(payload);
                 if (res.success) {
                     setRooms([...rooms, res.data]);
                     setIsModalOpen(false);
